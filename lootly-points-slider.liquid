@@ -1,7 +1,6 @@
-<!-- A third party library for improved slider functionality on mobile -->
-<script src="https://cdn.rangetouch.com/2.0.1/rangetouch.js"></script>
-​
-<div class="lootly-variable-reward-wrapper">
+<html><head><script src="https://cdn.rangetouch.com/2.0.1/rangetouch.js"></script>
+
+</head><body><div class="lootly-variable-reward-wrapper">
 	<div class="customer-balance">
 		<b>You have <span class="lootly-points-balance"></span> points</b>
 	</div>
@@ -27,7 +26,7 @@
 		</div>
 	</div>
 </div>
-​
+
 <script>
 	let sliderValue = 0;
 	let customerPoints;
@@ -36,7 +35,7 @@
 	let pointsRequired;
 	let variablePointMin;
 	let variablePointMax;
-​
+
     function initLootlySlider() {
     	// get customer balance and variable reward
     	let lootlyWidget = document.querySelector('#lootly-widget');
@@ -67,7 +66,7 @@
 			},
 		}))
     }
-​
+
     function redeemLootlyReward() {
     	// Apply Coupon to discount field - Render Items 
 	    let points = parseInt(document.querySelector('.lootly-slider-input').value);
@@ -102,23 +101,33 @@
 			document.querySelector('.lootly-variable-reward-wrapper').setAttribute('data-loading', 'true');
     	}
     }
-​
+
     function renderLootlyItems() {
     	// Slider limits
+    	let orderValue;
+    	let maxSliderValue;
+    	let orderSubtotalElement = document.querySelector('.total-line__price .order-summary__emphasis');
+    	if(orderSubtotalElement && parseInt(orderSubtotalElement.getAttribute('data-checkout-subtotal-price-target'))) {
+	    	orderValue = parseInt(orderSubtotalElement.getAttribute('data-checkout-subtotal-price-target'));
+	    	orderValue = Math.ceil(parseFloat(orderValue)/100);
+    		maxSliderValue = Math.min(customerPoints, variablePointMax, orderValue*pointsRequired);
+    	} else {
+    		maxSliderValue = Math.min(customerPoints, variablePointMax);
+    	}
     	sliderValue = document.querySelector('.lootly-slider-input').value;
     	if(sliderValue < variablePointMin) document.querySelector('.lootly-slider-input').value = (variablePointMin);
     	if(sliderValue > variablePointMax) document.querySelector('.lootly-slider-input').value = (variablePointMax);
-    	document.querySelector('.lootly-slider-input').setAttribute('max', Math.min(customerPoints, variablePointMax));
+    	document.querySelector('.lootly-slider-input').setAttribute('max', maxSliderValue);
     	document.querySelector('.lootly-slider-input').setAttribute('min', variablePointMin);
     	document.querySelector('.lootly-slider-input').setAttribute('step', pointsRequired);
     	sliderValue = document.querySelector('.lootly-slider-input').value;
-​
+    	// Render Points
     	document.querySelector('.lootly-points-balance').innerText = (customerPoints);
     	document.querySelector('.lootly-redeem-points').innerText = (sliderValue);
     	document.querySelector('.lootly-redeem-value').innerText = (rewardValue*sliderValue/pointsRequired);
     	document.querySelector('.lootly-variable-reward-wrapper').style.display = "block"
     }
-​
+
     function applyCouponToCart(coupon) {
 		var discountCodeInput = document.querySelector('#checkout_reduction_code');
 		var discountCodeInputButton = discountCodeInput.closest('form').querySelector('[type=submit]');
@@ -127,13 +136,13 @@
 		discountCodeInputButton.removeAttribute('disabled');
 		discountCodeInputButton.click();
     };
-​
+
 	document.addEventListener("DOMContentLoaded", function(){
 	    initLootlySlider();
     	new RangeTouch('.lootly-slider-input');
 	});
 </script>
-​
+
 <style>
 	.lootly-variable-reward-wrapper {
 		font-family: Arial;
@@ -144,7 +153,6 @@
 		max-width: 100%;
 		width: 100%;
 		display: none;
-		color: #000;
 	}
 	.customer-balance {
 		margin-bottom: 16px;
@@ -191,7 +199,7 @@
 		margin-right: 15px;
 		margin-top: 18px;
 		width: 100%;
-		height: 5px;
+		height: 6px;
 		border-radius: 2px;  
 		background: #d3d3d3;
 		outline: none;
@@ -201,17 +209,20 @@
 	}
 	.lootly-slider-input::-webkit-slider-thumb {
 		-webkit-appearance: none;
-		appearance: none;
-		width: 13px;
-		height: 13px;
-		border-radius: 50%; 
+		width: 16px;
+		height: 16px;
+		border-radius: 10px;
+		background-color: #a5a5a5;
+		overflow: visible;
 		cursor: pointer;
 	}
 	.lootly-slider-input::-moz-range-thumb {
-		width: 13px;
-		height: 13px;
-		border-radius: 50%;
+		width: 16px;
+		height: 16px;
+		border-radius: 10px;
 		cursor: pointer;
+		background-color: #a5a5a5;
+		border-color: #a5a5a5;
 	}
 	.lootly-reward-success {
 		display: none;
@@ -224,9 +235,9 @@
 	.lootly-variable-reward-wrapper[data-loading="true"]:not([data-success="true"]) button span {
 		border: 2px solid transparent;
 		border-radius: 50%;
-		border-top: 2px solid #fff;
-		border-right: 2px solid #fff;
-		border-bottom: 2px solid #fff;
+		border-top: 2px solid #000;
+		border-right: 2px solid #000;
+		border-bottom: 2px solid #000;
 		width: 20px;
 		height: 20px;
 		-webkit-animation: spin 2s linear infinite;
@@ -256,4 +267,4 @@
 		0% { transform: rotate(0deg); }
 		100% { transform: rotate(360deg); }
 	}	
-</style>
+</style></body></html>
