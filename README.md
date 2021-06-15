@@ -3,3 +3,4 @@ This repo contains code samples to help make life a bit easier when deploying ou
 
 #  List of code samples
 *  Shopify Points Slider
+*  BigCommerce Points Slider
