@@ -1,5 +1,4 @@
 <html><head><script src="https://cdn.rangetouch.com/2.0.1/rangetouch.js"></script>
-
 </head><body><div class="lootly-variable-reward-wrapper">
 	<div class="customer-balance">
 		<b>You have <span class="lootly-points-balance"></span> points</b>
@@ -110,13 +109,16 @@
     	if(orderSubtotalElement && parseInt(orderSubtotalElement.getAttribute('data-checkout-subtotal-price-target'))) {
 	    	orderValue = parseInt(orderSubtotalElement.getAttribute('data-checkout-subtotal-price-target'));
 	    	orderValue = Math.ceil(parseFloat(orderValue)/100);
-    		maxSliderValue = Math.min(customerPoints, variablePointMax, orderValue*pointsRequired);
-    	} else {
-    		maxSliderValue = Math.min(customerPoints, variablePointMax);
+    		maxSliderValue = Math.min(customerPoints, parseInt(orderValue*pointsRequired));
     	}
+    	if(variablePointMax) maxSliderValue = Math.min(maxSliderValue, variablePointMax);
     	sliderValue = document.querySelector('.lootly-slider-input').value;
-    	if(sliderValue < variablePointMin) document.querySelector('.lootly-slider-input').value = (variablePointMin);
-    	if(sliderValue > variablePointMax) document.querySelector('.lootly-slider-input').value = (variablePointMax);
+    	if(variablePointMin && sliderValue < variablePointMin) {
+    		document.querySelector('.lootly-slider-input').value = (variablePointMin);
+    	}
+    	if(maxSliderValue && sliderValue > maxSliderValue) {
+    		document.querySelector('.lootly-slider-input').value = (maxSliderValue);
+    	}
     	document.querySelector('.lootly-slider-input').setAttribute('max', maxSliderValue);
     	document.querySelector('.lootly-slider-input').setAttribute('min', variablePointMin);
     	document.querySelector('.lootly-slider-input').setAttribute('step', pointsRequired);
@@ -224,6 +226,11 @@
 		background-color: #a5a5a5;
 		border-color: #a5a5a5;
 	}
+	.lootly-variable-reward-wrapper :focus + label,
+	.lootly-variable-reward-wrapper :focus {
+		outline: 0 !important;
+		outline-offset: 0 !important;
+	}
 	.lootly-reward-success {
 		display: none;
 	}
@@ -235,9 +242,9 @@
 	.lootly-variable-reward-wrapper[data-loading="true"]:not([data-success="true"]) button span {
 		border: 2px solid transparent;
 		border-radius: 50%;
-		border-top: 2px solid #000;
-		border-right: 2px solid #000;
-		border-bottom: 2px solid #000;
+		border-top: 2px solid #fff;
+		border-right: 2px solid #fff;
+		border-bottom: 2px solid #fff;
 		width: 20px;
 		height: 20px;
 		-webkit-animation: spin 2s linear infinite;
