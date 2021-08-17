@@ -1,4 +1,4 @@
-<div class="lootly-variable-reward-wrapper">
+<html><head></head><body><div class="lootly-variable-reward-wrapper">
     <div class="customer-balance">
         <b>You have <span class="lootly-points-balance"></span> points</b>
     </div>
@@ -9,14 +9,7 @@
                     Redeem <span class="lootly-redeem-points"></span> points
                 </div>
                 <div class="lootly-redeem-slider">
-                    <input 
-                    	class="lootly-slider-input" 
-                    	type="range" 
-                    	min="0" 
-                    	max="100" 
-                    	value="0" 
-                    	onchange="renderLootlyItems()" 
-                    	oninput="renderLootlyItems()">
+                    <input class="lootly-slider-input" type="range" min="0" max="100" value="0" onchange="renderLootlyItems()" oninput="renderLootlyItems()">
                     <label>$<span class="lootly-redeem-value"></span> off</label>
                 </div>
             </div>
@@ -36,7 +29,7 @@
 <script>
     // Change these selectors to work on your theme
     window.cartSubtotal = '<?php echo WC()->cart->get_cart_contents_total(); ?>'; // Customer's cart subtotal ex: $100.00
-    window.couponInputSelector = '[name="couponcode"]'; // coupon input field CSS selector
+    window.couponInputSelector = '[name="coupon_code"]'; // coupon input field CSS selector
     
     // Lootly script
     let sliderValue = 0;
@@ -117,7 +110,7 @@
        	// Slider limits
        	let orderValue;
        	let maxSliderValue;
-       	let orderSubtotal = window.cartSubtotal;
+       	let orderSubtotal = (window.cartSubtotal || '').replace(/[^0-9\.-]+/g,"");
        	if(orderSubtotal) {
         	orderValue = parseInt(orderSubtotal);
        		maxSliderValue = Math.min(customerPoints, parseInt(orderValue*pointsRequired));
@@ -220,14 +213,19 @@
 	    margin-right: 15px;
 	    margin-top: 18px;
 	    width: 100%;
-	    height: 6px;
+	    height: 5px !important;
 	    border-radius: 2px;  
-	    background: #d3d3d3;
+	    background: #d3d3d3 !important;
 	    outline: none;
 	    opacity: 0.7;
 	    -webkit-transition: .2s;
 	    transition: opacity .2s;
+		border: none !important;
+		min-height: unset !important;
     }
+	.lootly-slider-input:focus {
+		border: none !important;
+	}
     .lootly-slider-input::-webkit-slider-thumb {
 	    -webkit-appearance: none;
 	    width: 16px;
@@ -294,3 +292,4 @@
 	    100% { transform: rotate(360deg); }
     }
 </style>
+</body></html>
