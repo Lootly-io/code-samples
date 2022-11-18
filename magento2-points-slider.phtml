@@ -1,0 +1,301 @@
+<div class="lootly-variable-reward-wrapper">
+    <div class="customer-balance">
+        <b>You have <span class="lootly-points-balance"></span> points</b>
+    </div>
+    <div class="lootly-variable-reward-block">
+        <div class="lootly-variable-reward-box">
+            <div class="lootly-reward-slider">
+                <div class="redeem-points">
+                    Redeem <span class="lootly-redeem-points"></span> points
+                </div>
+                <div class="lootly-redeem-slider">
+                    <input class="lootly-slider-input" type="range" min="0" max="100" value="0" onchange="renderLootlyItems()" oninput="renderLootlyItems()">
+                    <label>$<span class="lootly-redeem-value"></span> off</label>
+                </div>
+            </div>
+            <div class="lootly-reward-success">
+                <p>Congrats! Your reward has been applied to the cart</p>
+            </div>
+        </div>
+        <div class="redeem-points-button-wrapper">
+            <button type="button" onclick="redeemLootlyReward()">
+                <span>Redeem</span>
+            </button>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.rangetouch.com/2.0.1/rangetouch.js"></script>
+<script>
+    require(['RangeTouch'],function(RangeTouch) {
+        // Change these selectors to work on your theme
+
+        window.cartSubtotal = '<?php echo $this->helper('Magento\Checkout\Helper\Cart')->getQuote()->getBaseSubtotal();?>'; // Customer's cart subtotal ex: $100.00
+        window.couponInputSelector = '[name="discount_code"]'; // coupon input field CSS selector
+        window.pointsSliderDestinationSelector = '#discount-form';
+
+        // Lootly script
+        let sliderValue = 0;
+        let customerPoints;
+        let rewardId;
+        let rewardValue;
+        let pointsRequired;
+        let variablePointMin;
+        let variablePointMax;
+
+        function initLootlySlider() {
+            // get customer balance and variable reward
+            let lootlyWidget = document.querySelector('#lootly-widget');
+            var xhr = new XMLHttpRequest();
+            var url = (lootlyWidget.getAttribute('data-provider') || 'https://lootly.io').replace(new RegExp('\/$'), '');
+            xhr.open('POST', url + '/api/widget/variable-points-slider', true);
+            xhr.onload = function () {
+                if (this.status == 200) {
+                    let response = JSON.parse(this.responseText);
+                    customerPoints = response.customer_points;
+                    rewardId = response.reward_id;
+                    rewardValue = response.reward_value;
+                    pointsRequired = response.points_required;
+                    variablePointMin = response.variable_point_min;
+                    variablePointMax = response.variable_point_max;
+                    renderLootlyItems();
+                }
+            };
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.send(JSON.stringify({
+                shop: {
+                    domain: lootlyWidget.getAttribute('data-shop-domain'),
+                    signature: lootlyWidget.getAttribute('data-shop-id')
+                },
+                customer: {
+                    id: lootlyWidget.getAttribute('data-customer-id'),
+                    signature: lootlyWidget.getAttribute('data-customer-signature'),
+                },
+            }))
+        }
+
+        function redeemLootlyReward() {
+            // Apply Coupon to discount field - Render Items
+            let points = parseInt(document.querySelector('.lootly-slider-input').value);
+            if (customerPoints >= points) {
+                let lootlyWidget = document.querySelector('#lootly-widget');
+                var xhr = new XMLHttpRequest();
+                var url = (lootlyWidget.getAttribute('data-provider') || 'https://lootly.io').replace(new RegExp('\/$'), '');
+                xhr.open('POST', url + '/api/widget/rewards/' + rewardId + '/redeem', true);
+                xhr.onload = function () {
+                    if (this.status == 200) {
+                        let data = JSON.parse(this.responseText);
+                        customerPoints = customerPoints - points;
+                        applyCouponToCart(data.data.coupon_code);
+                        document.querySelector('.lootly-points-balance').innerText = (customerPoints);
+                        document.querySelector('.lootly-variable-reward-wrapper').setAttribute('data-success', 'true');
+                    } else {
+                        document.querySelector('.lootly-variable-reward-wrapper').setAttribute('data-loading', 'false');
+                    }
+                };
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                xhr.send(JSON.stringify({
+                    shop: {
+                        domain: lootlyWidget.getAttribute('data-shop-domain'),
+                        signature: lootlyWidget.getAttribute('data-shop-id')
+                    },
+                    customer: {
+                        id: lootlyWidget.getAttribute('data-customer-id'),
+                        signature: lootlyWidget.getAttribute('data-customer-signature'),
+                    },
+                    points: points
+                }))
+                document.querySelector('.lootly-variable-reward-wrapper').setAttribute('data-loading', 'true');
+            }
+        }
+
+
+        function renderLootlyItems() {
+            // Slider limits
+            let orderValue;
+            let maxSliderValue;
+            let orderSubtotal = (window.cartSubtotal || '').replace(/[^0-9\.-]+/g, "");
+            if (orderSubtotal) {
+                orderValue = parseInt(orderSubtotal);
+                maxSliderValue = Math.min(customerPoints, parseInt(orderValue * pointsRequired));
+            }
+            if (variablePointMax) maxSliderValue = Math.min(maxSliderValue, variablePointMax);
+            sliderValue = document.querySelector('.lootly-slider-input').value;
+            if (variablePointMin && sliderValue < variablePointMin) {
+                document.querySelector('.lootly-slider-input').value = (variablePointMin);
+            }
+            if (maxSliderValue && sliderValue > maxSliderValue) {
+                document.querySelector('.lootly-slider-input').value = (maxSliderValue);
+            }
+            document.querySelector('.lootly-slider-input').setAttribute('max', maxSliderValue);
+            document.querySelector('.lootly-slider-input').setAttribute('min', variablePointMin);
+            document.querySelector('.lootly-slider-input').setAttribute('step', pointsRequired);
+            sliderValue = document.querySelector('.lootly-slider-input').value;
+            // Render Points
+            document.querySelector('.lootly-points-balance').innerText = (customerPoints);
+            document.querySelector('.lootly-redeem-points').innerText = (sliderValue);
+            document.querySelector('.lootly-redeem-value').innerText = (rewardValue * sliderValue / pointsRequired);
+            document.querySelector('.lootly-variable-reward-wrapper').style.display = "block"
+        }
+
+        function applyCouponToCart(coupon) {
+            var discountCodeInput = document.querySelector(window.couponInputSelector); // Discount input
+            if (discountCodeInput) {
+                var discountCodeInputButton = discountCodeInput.closest('form').querySelector('[type=submit], [type="button"]'); // Apply button
+                discountCodeInput.value = coupon;
+                discountCodeInputButton.click();
+            }
+        };
+
+        let sliderLootlyWidget = setInterval(function () {
+            let lootlyWidget = document.querySelector('#lootly-widget');
+            let rewardWrapper = document.querySelector('.lootly-variable-reward-wrapper');
+            let pointsDestination = document.querySelector(window.pointsSliderDestinationSelector);
+            if (lootlyWidget && rewardWrapper && pointsDestination) {
+                if (lootlyWidget.getAttribute('data-customer-signature') && typeof RangeTouch !== 'undefined') {
+                    pointsDestination.parentNode.insertBefore(rewardWrapper,pointsDestination);
+                    initLootlySlider();
+                    new RangeTouch('.lootly-slider-input');
+                    clearInterval(sliderLootlyWidget);
+                }
+            }
+        }, 100);
+    });
+</script>
+
+<style>
+    .lootly-variable-reward-wrapper {
+        font-family: Arial;
+        width: auto;
+        display: inline-block;
+        padding: 20px 0;
+        border-bottom: 1px solid #ddd;
+        max-width: 100%;
+        width: 100%;
+        display: none;
+        width: 464px;
+        margin-left: auto;
+    }
+    .customer-balance {
+        margin-bottom: 16px;
+    }
+    .redeem-points {
+        margin-bottom: 15px;
+        opacity: 0.7;
+        font-size: 15px;
+    }
+    .lootly-variable-reward-block {
+        display: flex;
+        align-items: center;
+        min-height: 78px;
+    }
+    .lootly-variable-reward-box {
+        width: 100%;
+        padding-right: 30px;
+    }
+    .lootly-redeem-slider {
+        text-align: center;
+    }
+    .lootly-redeem-slider label {
+        font-size: 14px;
+        opacity: 0.7;
+        margin-top: 20px;
+        display: block;
+    }
+    .redeem-points-button-wrapper button {
+        background: #000;
+        border: none;
+        color: #fff;
+        padding: 10px 20px;
+        font-weight: 600;
+        border-radius: 4px;
+        cursor: pointer;
+        height: 40px;
+        min-width: 95px;
+        white-space: nowrap;
+        line-height: normal;
+    }
+    .lootly-slider-input {
+        -webkit-appearance: none;
+        display: block;
+        margin-right: 15px;
+        margin-top: 18px;
+        width: 100%;
+        height: 5px !important;
+        border-radius: 2px;
+        background: #d3d3d3 !important;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+        border: none !important;
+        min-height: unset !important;
+    }
+    .lootly-slider-input:focus {
+        border: none !important;
+    }
+    .lootly-slider-input::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 10px;
+        background-color: #a5a5a5;
+        overflow: visible;
+        cursor: pointer;
+    }
+    .lootly-slider-input::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        background-color: #a5a5a5;
+        border-color: #a5a5a5;
+    }
+    .lootly-variable-reward-wrapper :focus + label,
+    .lootly-variable-reward-wrapper :focus {
+        outline: 0 !important;
+        outline-offset: 0 !important;
+    }
+    .lootly-reward-success {
+        display: none;
+    }
+    .lootly-reward-success p {
+        margin: 0;
+        font-size: 15px;
+        opacity: 0.7;
+    }
+    .lootly-variable-reward-wrapper[data-loading="true"]:not([data-success="true"]) button span {
+        border: 2px solid transparent;
+        border-radius: 50%;
+        border-top: 2px solid #fff;
+        border-right: 2px solid #fff;
+        border-bottom: 2px solid #fff;
+        width: 20px;
+        height: 20px;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 1.5s linear infinite;
+        display: inline-block;
+        font-size: 0;
+        vertical-align: middle;
+    }
+    .lootly-variable-reward-wrapper[data-success="true"] button,
+    .lootly-variable-reward-wrapper[data-loading="true"] button {
+        pointer-events: none;
+    }
+    .lootly-variable-reward-wrapper[data-success="true"] button {
+        background: gray;
+    }
+    .lootly-variable-reward-wrapper[data-success="true"] .lootly-variable-reward-box .lootly-reward-slider {
+        display: none;
+    }
+    .lootly-variable-reward-wrapper[data-success="true"] .lootly-variable-reward-box .lootly-reward-success {
+        display: block;
+    }
+    @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(360deg); }
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
