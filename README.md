@@ -5,3 +5,4 @@ This repo contains code samples to help make life a bit easier when deploying ou
 *  Shopify Plus Points Slider
 *  BigCommerce Points Slider
 *  Woocommerce Points Slider
+*  Magento 2 Points Slider
